@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(pkill -f \"node server.js\")",
+      "Bash(node server.js --https)",
+      "WebFetch(domain:developers.totalsynergy.com)",
+      "WebFetch(domain:api.totalsynergy.com)",
+      "WebFetch(domain:help.totalsynergy.com)",
+      "Bash(node *)"
+    ]
+  }
+}

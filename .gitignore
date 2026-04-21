@@ -1,0 +1,4 @@
+synergy_response.json
+node_modules/
+*.log
+.DS_Store

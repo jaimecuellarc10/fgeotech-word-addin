@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FGeotech</title>
+  <link rel="stylesheet" href="taskpane.css"/>
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js" type="text/javascript"></script>
+</head>
+<body>
+
+<header>
+  <h1>FGeotech</h1>
+  <p>ACT Geotechnical Engineers</p>
+</header>
+
+<!-- Settings (API key) -->
+<div class="settings-toggle" onclick="toggleSettings()">
+  <span>&#9881; Settings</span>
+  <span id="settings-arrow">&#9660;</span>
+</div>
+<div id="settings-panel">
+  <div class="field-row">
+    <label for="orgSlug">Organisation Slug</label>
+    <input type="text" id="orgSlug" placeholder="e.g. actgeotechnicalengineers"/>
+    <div class="api-note">Found in your Total Synergy URL after /Organisation/</div>
+  </div>
+  <div class="field-row" style="margin-top:8px;">
+    <label for="apiKey">Total Synergy API Key</label>
+    <input type="password" id="apiKey" placeholder="Paste your API key here"/>
+    <div class="api-note">
+      Get your key: Total Synergy profile menu &rarr; API Keys.<br/>
+      Key is saved locally in your browser.
+    </div>
+  </div>
+  <div style="margin-top:8px; display:flex; gap:6px;">
+    <button class="btn-primary" onclick="saveSettings()">Save Settings</button>
+    <button class="btn-secondary" onclick="clearSettings()">Clear</button>
+  </div>
+</div>
+
+<!-- Project lookup -->
+<div class="section">
+  <div class="section-title">Load Project</div>
+  <div class="field-row">
+    <label for="projectNumber">Project Number</label>
+    <div class="input-group">
+      <input type="text" id="projectNumber" placeholder="e.g. 2024-001" onkeydown="if(event.key==='Enter') loadProject()"/>
+      <button class="btn-primary" id="loadBtn" onclick="loadProject()">Load</button>
+    </div>
+  </div>
+</div>
+
+<!-- Status bar -->
+<div id="status"></div>
+
+<!-- Project fields -->
+<div class="section" id="fields-section" style="display:none;">
+  <div class="section-title">Project Details <span style="font-weight:normal;font-size:10px;color:#a19f9d;">(edit before applying)</span></div>
+
+  <div class="field-row">
+    <label>Project Number <span class="field-tag">synergy_project_number</span></label>
+    <input type="text" id="f_project_number"/>
+  </div>
+
+  <div class="field-row">
+    <label>Project Name <span class="field-tag">synergy_project_name</span></label>
+    <input type="text" id="f_project_name"/>
+  </div>
+
+  <div class="field-row">
+    <label>Client / Company <span class="field-tag">synergy_client_name</span></label>
+    <input type="text" id="f_client_name"/>
+  </div>
+
+  <div class="field-row">
+    <label>Client Contact <span class="field-tag">synergy_client_contact</span></label>
+    <input type="text" id="f_client_contact"/>
+  </div>
+
+  <div class="field-row">
+    <label>Project Manager <span class="field-tag">synergy_project_manager</span></label>
+    <input type="text" id="f_project_manager"/>
+  </div>
+
+  <div class="field-row">
+    <label>Project Address <span class="field-tag">synergy_project_address</span></label>
+    <input type="text" id="f_project_address"/>
+  </div>
+
+  <div class="field-row">
+    <label>Suburb / City <span class="field-tag">synergy_project_suburb</span></label>
+    <input type="text" id="f_project_suburb"/>
+  </div>
+
+  <div class="field-row">
+    <label>State <span class="field-tag">synergy_project_state</span></label>
+    <input type="text" id="f_project_state"/>
+  </div>
+
+  <div class="field-row">
+    <label>Postcode <span class="field-tag">synergy_project_postcode</span></label>
+    <input type="text" id="f_project_postcode"/>
+  </div>
+
+  <div class="field-row">
+    <label>Office <span class="field-tag">synergy_project_office</span></label>
+    <input type="text" id="f_project_office"/>
+  </div>
+
+  <button class="btn-success" id="applyBtn" onclick="applyToDocument()">&#10003; Apply to Document</button>
+</div>
+
+<!-- Template help -->
+<div class="section">
+  <div class="section-title">Template Setup</div>
+  <p style="font-size:11px; color:#605e5c; line-height:1.5;">
+    To mark where data goes in a Word template, insert a <strong>Plain Text Content Control</strong>
+    (Developer tab &rarr; Controls &rarr; Plain Text), then open its <strong>Properties</strong> and set the
+    <strong>Tag</strong> to one of the values shown above in <code style="background:#f3f2f1;padding:1px 3px;">grey</code>.
+  </p>
+</div>
+
+<script src="taskpane.js"></script>
+</body>
+</html>
