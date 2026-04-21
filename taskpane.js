@@ -85,12 +85,10 @@ async function loadProject() {
   setLoadBtn(true);
 
   try {
-    const res = await fetch(`/proxy/projects?number=${encodeURIComponent(number)}`, {
-      headers: {
-        "X-Synergy-Key": apiKey,
-        "X-Synergy-Org": orgSlug,
-      },
-    });
+    const res = await fetch(
+      `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.projectNumber=${encodeURIComponent(number)}`,
+      { headers: { "access-token": apiKey, Accept: "application/json" } }
+    );
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
