@@ -86,10 +86,8 @@ async function loadProject() {
   setLoadBtn(true);
 
   try {
-    const statusValues = ["Active", "Inactive", "Lost", "Closed", "OnHold", "Prospect", "Completed", "Archived"];
-    const statusParams = statusValues.map(s => `criteria.statuses=${encodeURIComponent(s)}`).join("&");
     const res = await fetch(
-      `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.projectNumber=${encodeURIComponent(number)}&${statusParams}`,
+      `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.projectNumber=${encodeURIComponent(number)}`,
       { headers: { "access-token": apiKey, Accept: "application/json" } }
     );
 
@@ -99,12 +97,13 @@ async function loadProject() {
     }
 
     const data = await res.json();
+    console.log("Total Synergy response:", JSON.stringify(data));
 
     // Total Synergy wraps results in { items: [...], totalItems: N }
     const project = data.items ? data.items[0] : (Array.isArray(data) ? data[0] : data);
 
     if (!project) {
-      throw new Error("Project not found. Check the project number and try again.");
+      throw new Error(`Project not found (API returned ${data.totalItems ?? 0} result(s)). The project may have a status not returned by default.`);
     }
 
     populateFields(project);
