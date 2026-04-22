@@ -6,6 +6,7 @@
 const FIELD_MAP = [
   { inputId: "f_project_number",      tag: "synergy_project_number",      apiPath: "projectNumber" },
   { inputId: "f_project_name",        tag: "synergy_project_name",        apiPath: "name" },
+  { inputId: "f_project_status",      tag: "synergy_project_status",      apiPath: "status" },
   { inputId: "f_client_name",         tag: "synergy_client_name",         apiPath: "primaryContact" },
   { inputId: "f_client_contact",      tag: "synergy_client_contact",      apiPath: "clientReferenceNumber" },
   { inputId: "f_project_manager",     tag: "synergy_project_manager",     apiPath: "manager" },
@@ -85,8 +86,10 @@ async function loadProject() {
   setLoadBtn(true);
 
   try {
+    const statusValues = ["Active", "Inactive", "Lost", "Closed", "OnHold", "Prospect", "Completed", "Archived"];
+    const statusParams = statusValues.map(s => `criteria.statuses=${encodeURIComponent(s)}`).join("&");
     const res = await fetch(
-      `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.projectNumber=${encodeURIComponent(number)}`,
+      `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.projectNumber=${encodeURIComponent(number)}&${statusParams}`,
       { headers: { "access-token": apiKey, Accept: "application/json" } }
     );
 
