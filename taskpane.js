@@ -18,8 +18,8 @@ const FIELD_MAP = [
 ];
 
 const STORAGE_KEY_API = "synergy_api_key";
-const STORAGE_KEY_ORG = "synergy_org_slug";
 const STORAGE_KEY_SETTINGS_OPEN = "synergy_settings_open";
+const ORG_SLUG = "actgeotechnicalengineers";
 
 Office.onReady(() => {
   loadStoredSettings();
@@ -37,29 +37,23 @@ function toggleSettings() {
 
 function saveSettings() {
   const key = document.getElementById("apiKey").value.trim();
-  const org = document.getElementById("orgSlug").value.trim();
   if (!key) {
     setStatus("Enter an API key before saving.", "error");
     return;
   }
   localStorage.setItem(STORAGE_KEY_API, key);
-  if (org) localStorage.setItem(STORAGE_KEY_ORG, org);
   setStatus("Settings saved.", "success");
 }
 
 function clearSettings() {
   localStorage.removeItem(STORAGE_KEY_API);
-  localStorage.removeItem(STORAGE_KEY_ORG);
   document.getElementById("apiKey").value = "";
-  document.getElementById("orgSlug").value = "";
   setStatus("Settings cleared.", "info");
 }
 
 function loadStoredSettings() {
   const saved = localStorage.getItem(STORAGE_KEY_API);
   if (saved) document.getElementById("apiKey").value = saved;
-  const org = localStorage.getItem(STORAGE_KEY_ORG);
-  if (org) document.getElementById("orgSlug").value = org;
   if (localStorage.getItem(STORAGE_KEY_SETTINGS_OPEN) === "1") {
     document.getElementById("settings-panel").classList.add("open");
     document.getElementById("settings-arrow").textContent = "▲";
@@ -71,7 +65,6 @@ function loadStoredSettings() {
 async function loadProject() {
   const number = document.getElementById("projectNumber").value.trim();
   const apiKey = localStorage.getItem(STORAGE_KEY_API);
-  const orgSlug = localStorage.getItem(STORAGE_KEY_ORG) || "actgeotechnicalengineers";
 
   if (!number) {
     setStatus("Enter a project number.", "error");
@@ -87,7 +80,7 @@ async function loadProject() {
 
   try {
     const res = await fetch(
-      `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.projectNumber=${encodeURIComponent(number)}`,
+      `https://api.totalsynergy.com/api/v2/Organisation/${ORG_SLUG}/Projects?criteria.projectNumber=${encodeURIComponent(number)}`,
       { headers: { "access-token": apiKey, Accept: "application/json" } }
     );
 
