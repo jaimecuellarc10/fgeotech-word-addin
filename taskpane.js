@@ -86,44 +86,25 @@ async function loadProject() {
   setLoadBtn(true);
 
   try {
-    const baseUrl = `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.projectNumber=${encodeURIComponent(number)}`;
-    const headers = { "access-token": apiKey, Accept: "application/json" };
+    const res = await fetch(
+      `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.projectNumber=${encodeURIComponent(number)}`,
+      { headers: { "access-token": apiKey, Accept: "application/json" } }
+    );
 
-    const inactiveBase = `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.isActive=false&criteria.pageSize=1000`;
-
-    const [resActive, resPage1, resPage2] = await Promise.all([
-      fetch(baseUrl, { headers }),
-      fetch(`${inactiveBase}&criteria.pageNumber=1`, { headers }),
-      fetch(`${inactiveBase}&criteria.pageNumber=2`, { headers }),
-    ]);
-
-    if (!resActive.ok) {
-      const err = await resActive.json().catch(() => ({}));
-      throw new Error(err.error || `Server returned ${resActive.status}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Server returned ${res.status}`);
     }
 
-    const [dataActive, dataPage1, dataPage2] = await Promise.all([
-      resActive.json(),
-      resPage1.ok ? resPage1.json() : Promise.resolve({ items: [] }),
-      resPage2.ok ? resPage2.json() : Promise.resolve({ items: [] }),
-    ]);
-
-    const activeItems = dataActive.items ?? (Array.isArray(dataActive) ? dataActive : []);
-    const inactiveItems = [
-      ...(dataPage1.items ?? (Array.isArray(dataPage1) ? dataPage1 : [])),
-      ...(dataPage2.items ?? (Array.isArray(dataPage2) ? dataPage2 : [])),
-    ];
-    const inactiveMatch = inactiveItems.find(p => p.projectNumber === number);
-    const project = activeItems[0] ?? inactiveMatch;
+    const data = await res.json();
+    const project = data.items ? data.items[0] : (Array.isArray(data) ? data[0] : data);
 
     if (!project) {
-      throw new Error(`Project not found. Searched ${activeItems.length} active and ${inactiveItems.length} inactive projects.`);
+      throw new Error("Project not found. Note: only active projects can be loaded. If this project is completed or on hold, it cannot be retrieved via the API.");
     }
 
     populateFields(project);
     document.getElementById("fields-section").style.display = "block";
-    document.getElementById("debug-output").textContent = JSON.stringify(project, null, 2);
-    document.getElementById("debug-section").style.display = "block";
     setStatus(`Project loaded: ${getNestedValue(project, "name") || number}`, "success");
   } catch (err) {
     setStatus(err.message, "error");
