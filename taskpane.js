@@ -150,50 +150,34 @@ async function applyToDocument() {
     await Word.run(async (context) => {
       const ooxmlResult = context.document.body.getOoxml();
       await context.sync();
-      const xml = ooxmlResult.value || "";
-      const sdtCount = (xml.match(/<w:sdt[\s>]/gi) || []).length;
-      const insCount = (xml.match(/<w:ins[\s>]/gi) || []).length;
-      const idx = xml.search(/<w:sdt[\s>]/i);
-      const ctx = idx >= 0 ? xml.substring(Math.max(0, idx - 120), idx + 80) : "(not found)";
-      setStatus(`sdt:${sdtCount} | w:ins:${insCount} | context before first sdt: ...${ctx}...`, sdtCount > 0 ? "success" : "error");
-      document.getElementById("applyBtn").disabled = false;
-    });
-    return;
-  } catch (e) {
-    setStatus("Diag error: " + e.message, "error");
-    document.getElementById("applyBtn").disabled = false;
-    return;
-  }
 
-  try {
-    await Word.run(async (context) => {
-      const controls = context.document.contentControls;
-      controls.load("items/tag,items/text");
-      await context.sync();
+      // contentControls API returns 0 for table-cell-level SDTs in this doc structure,
+      // so we manipulate the OOXML directly instead.
+      let xml = ooxmlResult.value;
+
+      // Strip placeholder-text flags so filled values display instead of placeholders
+      xml = xml.replace(/<w:showingPlcHdr\s*\/>/gi, "");
+      xml = xml.replace(/<w:rStyle\s+w:val="PlaceholderText"\s*\/>/gi, "");
 
       const updated = [];
       const notFound = [];
 
       for (const field of FIELD_MAP) {
         const value = document.getElementById(field.inputId).value;
-        const matches = controls.items.filter((cc) => cc.tag === field.tag);
-
-        if (matches.length === 0) {
-          if (value) notFound.push(field.tag);
-          continue;
-        }
-        for (const cc of matches) {
-          cc.insertText(value, "Replace");
+        const result = updateSdtByTag(xml, field.tag, value);
+        xml = result.xml;
+        if (result.updated) {
           updated.push(field.tag);
+        } else if (value) {
+          notFound.push(field.tag);
         }
       }
 
+      context.document.body.insertOoxml(xml, "Replace");
       await context.sync();
 
       let msg = `Applied ${updated.length} field(s).`;
-      if (notFound.length > 0) {
-        msg += ` No controls found for: ${notFound.join(", ")}.`;
-      }
+      if (notFound.length > 0) msg += ` No controls found for: ${notFound.join(", ")}.`;
       setStatus(msg, updated.length > 0 ? "success" : "info");
     });
   } catch (err) {
@@ -201,6 +185,43 @@ async function applyToDocument() {
   } finally {
     document.getElementById("applyBtn").disabled = false;
   }
+}
+
+// Finds the SDT with the given tag name in raw OOXML and replaces its text content.
+function updateSdtByTag(xml, tagName, value) {
+  const safeValue = value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  const tagIdx = xml.indexOf(`w:val="${tagName}"`);
+  if (tagIdx === -1) return { xml, updated: false };
+
+  const sdtContentOpen = "<w:sdtContent>";
+  const sdtPos = xml.indexOf(sdtContentOpen, tagIdx);
+  if (sdtPos === -1) return { xml, updated: false };
+
+  const contentStart = sdtPos + sdtContentOpen.length;
+  const contentEnd = xml.indexOf("</w:sdtContent>", contentStart);
+  if (contentEnd === -1) return { xml, updated: false };
+
+  let content = xml.slice(contentStart, contentEnd);
+
+  let firstReplaced = false;
+  content = content.replace(/<w:t(?:\s[^>]*)?>[\s\S]*?<\/w:t>/gi, () => {
+    if (!firstReplaced) {
+      firstReplaced = true;
+      return `<w:t xml:space="preserve">${safeValue}</w:t>`;
+    }
+    return "<w:t/>";
+  });
+
+  if (!firstReplaced) return { xml, updated: false };
+
+  return {
+    xml: xml.slice(0, contentStart) + content + xml.slice(contentEnd),
+    updated: true,
+  };
 }
 
 // --- Helpers ---
