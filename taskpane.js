@@ -10,10 +10,11 @@ const FIELD_MAP = [
   { inputId: "f_client_name",         tag: "synergy_client_name",         apiPath: "primaryContact" },
   { inputId: "f_client_contact",      tag: "synergy_client_contact",      apiPath: "clientReferenceNumber" },
   { inputId: "f_project_manager",     tag: "synergy_project_manager",     apiPath: "manager" },
-  { inputId: "f_project_address",     tag: "synergy_project_address",     apiPath: "address.address1" },
-  { inputId: "f_project_suburb",      tag: "synergy_project_suburb",      apiPath: "address.town" },
-  { inputId: "f_project_state",       tag: "synergy_project_state",       apiPath: "address.state" },
-  { inputId: "f_project_postcode",    tag: "synergy_project_postcode",    apiPath: "address.zipCode" },
+  { inputId: "f_project_address",      tag: "synergy_project_address",      apiPath: "address.address1" },
+  { inputId: "f_project_suburb",       tag: "synergy_project_suburb",       apiPath: "address.town" },
+  { inputId: "f_project_state",        tag: "synergy_project_state",        apiPath: "address.state" },
+  { inputId: "f_project_postcode",     tag: "synergy_project_postcode",     apiPath: "address.zipCode" },
+  { inputId: "f_project_full_address", tag: "synergy_project_full_address", apiPath: null },
   { inputId: "f_project_office",      tag: "synergy_project_office",      apiPath: "office" },
   { inputId: "f_client_email",        tag: "synergy_client_email",        apiPath: null },
   { inputId: "f_report_writer",       tag: "synergy_report_writer",       apiPath: null },
@@ -133,6 +134,14 @@ function populateFields(project) {
     const value = getNestedValue(project, field.apiPath) || "";
     document.getElementById(field.inputId).value = String(value);
   }
+  // Combine address parts into a single comma-separated string
+  const addressParts = [
+    document.getElementById("f_project_address").value,
+    document.getElementById("f_project_suburb").value,
+    document.getElementById("f_project_state").value,
+    document.getElementById("f_project_postcode").value,
+  ].filter(Boolean);
+  document.getElementById("f_project_full_address").value = addressParts.join(", ");
 }
 
 // Reads a dot-notation path from an object, e.g. "client.name" → obj.client.name
