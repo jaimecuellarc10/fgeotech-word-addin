@@ -148,16 +148,15 @@ async function applyToDocument() {
 
   try {
     await Word.run(async (context) => {
-      // Diagnostic: try three different load approaches
-      const a = context.document.contentControls;
-      a.load("tag");
-      const b = context.document.contentControls.getByTag("synergy_project_number");
-      b.load("items");
-      const c = context.document.body.contentControls;
-      c.load("tag");
+      const body = context.document.body;
+      body.load("text");
+      const ccs = context.document.contentControls;
+      ccs.load("tag");
       await context.sync();
-      const msg = `load(tag):${a.items.length} | getByTag:${b.items.length} | body:${c.items.length}`;
-      setStatus(msg, "info");
+      const preview = body.text.substring(0, 80).replace(/[\r\n]/g, "↵");
+      body.insertText("[FGEOTECH_MARKER]", "Start");
+      await context.sync();
+      setStatus(`Controls:${ccs.items.length} | Body:"${preview}" | Marker written — do you see [FGEOTECH_MARKER] in your document?`, "info");
       document.getElementById("applyBtn").disabled = false;
     });
     return;
