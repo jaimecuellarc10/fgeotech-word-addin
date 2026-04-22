@@ -148,15 +148,13 @@ async function applyToDocument() {
 
   try {
     await Word.run(async (context) => {
-      const body = context.document.body;
-      body.load("text");
-      const ccs = context.document.contentControls;
-      ccs.load("tag");
+      const range = context.document.body.getRange("Whole");
+      range.load("ooxml");
       await context.sync();
-      const preview = body.text.substring(0, 80).replace(/[\r\n]/g, "↵");
-      body.insertText("[FGEOTECH_MARKER]", "Start");
-      await context.sync();
-      setStatus(`Controls:${ccs.items.length} | Body:"${preview}" | Marker written — do you see [FGEOTECH_MARKER] in your document?`, "info");
+      const xml = range.ooxml;
+      const sdtCount = (xml.match(/<w:sdt[\s>]/gi) || []).length;
+      const tagCount = (xml.match(/w:val="synergy_/gi) || []).length;
+      setStatus(`OOXML sdt elements: ${sdtCount} | synergy tags: ${tagCount}`, sdtCount > 0 ? "success" : "error");
       document.getElementById("applyBtn").disabled = false;
     });
     return;
