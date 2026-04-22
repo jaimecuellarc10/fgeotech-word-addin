@@ -15,10 +15,10 @@ const FIELD_MAP = [
   { inputId: "f_project_state",       tag: "synergy_project_state",       apiPath: "address.state" },
   { inputId: "f_project_postcode",    tag: "synergy_project_postcode",    apiPath: "address.zipCode" },
   { inputId: "f_project_office",      tag: "synergy_project_office",      apiPath: "office" },
-  { inputId: "f_client_email",         tag: "synergy_client_email",        apiPath: null, manual: true },
-  { inputId: "f_report_writer",       tag: "synergy_report_writer",       apiPath: null, manual: true },
-  { inputId: "f_report_reviewer",     tag: "synergy_report_reviewer",     apiPath: null, manual: true },
-  { inputId: "f_investigation_type",  tag: "synergy_investigation_type",  apiPath: null, manual: true },
+  { inputId: "f_client_email",        tag: "synergy_client_email",        apiPath: null },
+  { inputId: "f_report_writer",       tag: "synergy_report_writer",       apiPath: null },
+  { inputId: "f_report_reviewer",     tag: "synergy_report_reviewer",     apiPath: null },
+  { inputId: "f_investigation_type",  tag: "synergy_investigation_type",  apiPath: null },
 ];
 
 const STORAGE_KEY_API = "synergy_api_key";
@@ -129,7 +129,7 @@ async function loadProject() {
 
 function populateFields(project) {
   for (const field of FIELD_MAP) {
-    if (field.manual) continue;
+    if (!field.apiPath) continue;
     const value = getNestedValue(project, field.apiPath) || "";
     document.getElementById(field.inputId).value = String(value);
   }
