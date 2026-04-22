@@ -148,19 +148,32 @@ async function applyToDocument() {
 
   try {
     await Word.run(async (context) => {
-      // Insert a test control via the API itself
-      const range = context.document.body.getRange("End");
-      const testCc = range.insertContentControl();
-      testCc.tag = "api_test";
+      const allControls = [];
+
+      // Search body
+      const bodyControls = context.document.body.contentControls;
+      bodyControls.load("items/tag");
+
+      // Search all sections (headers + footers)
+      const sections = context.document.sections;
+      sections.load("items");
       await context.sync();
 
-      // Now search for all controls including the one we just inserted
-      const controls = context.document.contentControls;
-      controls.load("items/tag");
-      await context.sync();
+      allControls.push(...bodyControls.items);
 
-      const tags = controls.items.map(cc => cc.tag);
-      setStatus(`API inserted 1, found ${controls.items.length}: ${tags.join(", ") || "none"}`, "info");
+      for (const section of sections.items) {
+        const headerPrimary = section.getHeader("Primary");
+        const footerPrimary = section.getFooter("Primary");
+        const headerControls = headerPrimary.contentControls;
+        const footerControls = footerPrimary.contentControls;
+        headerControls.load("items/tag");
+        footerControls.load("items/tag");
+        await context.sync();
+        allControls.push(...headerControls.items, ...footerControls.items);
+      }
+
+      const tags = allControls.map(cc => cc.tag);
+      setStatus(`Found ${allControls.length} control(s): ${tags.join(", ") || "none"}`, "info");
       return;
 
       const updated = [];
