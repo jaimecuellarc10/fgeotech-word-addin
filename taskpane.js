@@ -15,6 +15,7 @@ const FIELD_MAP = [
   { inputId: "f_project_state",       tag: "synergy_project_state",       apiPath: "address.state" },
   { inputId: "f_project_postcode",    tag: "synergy_project_postcode",    apiPath: "address.zipCode" },
   { inputId: "f_project_office",      tag: "synergy_project_office",      apiPath: "office" },
+  { inputId: "f_client_email",         tag: "synergy_client_email",        apiPath: null, manual: true },
   { inputId: "f_report_writer",       tag: "synergy_report_writer",       apiPath: null, manual: true },
   { inputId: "f_report_reviewer",     tag: "synergy_report_reviewer",     apiPath: null, manual: true },
   { inputId: "f_investigation_type",  tag: "synergy_investigation_type",  apiPath: null, manual: true },
@@ -100,6 +101,23 @@ async function loadProject() {
     }
 
     populateFields(project);
+
+    // Fetch client email from the Contacts endpoint using the project's primaryContactId
+    document.getElementById("f_client_email").value = "";
+    if (project.primaryContactId) {
+      const contactRes = await fetch(
+        `https://api.totalsynergy.com/api/v2/Organisation/${ORG_SLUG}/Contacts/${project.primaryContactId}`,
+        { headers: { "access-token": apiKey, Accept: "application/json" } }
+      ).catch(() => null);
+      if (contactRes && contactRes.ok) {
+        const contact = await contactRes.json();
+        const email = contact.email || contact.emailAddress
+          || (Array.isArray(contact.emails) ? contact.emails[0] : "")
+          || "";
+        document.getElementById("f_client_email").value = email;
+      }
+    }
+
     document.getElementById("fields-section").style.display = "block";
     setStatus(`Project loaded: ${getNestedValue(project, "name") || number}`, "success");
   } catch (err) {
