@@ -89,13 +89,12 @@ async function loadProject() {
     const baseUrl = `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.projectNumber=${encodeURIComponent(number)}`;
     const headers = { "access-token": apiKey, Accept: "application/json" };
 
-    const numberOnly = number.replace(/^[A-Za-z]+/, "");
-    const baseUrlNumeric = `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.number=${encodeURIComponent(numberOnly)}&criteria.isActive=false`;
+    const inactiveBase = `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.isActive=false&criteria.pageSize=1000`;
 
-    const [resActive, resInactive, resNumeric] = await Promise.all([
+    const [resActive, resPage1, resPage2] = await Promise.all([
       fetch(baseUrl, { headers }),
-      fetch(`${baseUrl}&criteria.isActive=false`, { headers }),
-      fetch(baseUrlNumeric, { headers }),
+      fetch(`${inactiveBase}&criteria.pageNumber=1`, { headers }),
+      fetch(`${inactiveBase}&criteria.pageNumber=2`, { headers }),
     ]);
 
     if (!resActive.ok) {
@@ -103,19 +102,22 @@ async function loadProject() {
       throw new Error(err.error || `Server returned ${resActive.status}`);
     }
 
-    const [dataActive, dataInactive, dataNumeric] = await Promise.all([
+    const [dataActive, dataPage1, dataPage2] = await Promise.all([
       resActive.json(),
-      resInactive.ok ? resInactive.json() : Promise.resolve({ items: [] }),
-      resNumeric.ok ? resNumeric.json() : Promise.resolve({ items: [] }),
+      resPage1.ok ? resPage1.json() : Promise.resolve({ items: [] }),
+      resPage2.ok ? resPage2.json() : Promise.resolve({ items: [] }),
     ]);
 
     const activeItems = dataActive.items ?? (Array.isArray(dataActive) ? dataActive : []);
-    const inactiveItems = dataInactive.items ?? (Array.isArray(dataInactive) ? dataInactive : []);
-    const numericItems = dataNumeric.items ?? (Array.isArray(dataNumeric) ? dataNumeric : []);
-    const project = activeItems[0] ?? inactiveItems[0] ?? numericItems[0];
+    const inactiveItems = [
+      ...(dataPage1.items ?? (Array.isArray(dataPage1) ? dataPage1 : [])),
+      ...(dataPage2.items ?? (Array.isArray(dataPage2) ? dataPage2 : [])),
+    ];
+    const inactiveMatch = inactiveItems.find(p => p.projectNumber === number);
+    const project = activeItems[0] ?? inactiveMatch;
 
     if (!project) {
-      throw new Error(`Project not found. (active:${activeItems.length}, inactive:${inactiveItems.length}, numeric:${numericItems.length})`);
+      throw new Error(`Project not found. Searched ${activeItems.length} active and ${inactiveItems.length} inactive projects.`);
     }
 
     populateFields(project);
