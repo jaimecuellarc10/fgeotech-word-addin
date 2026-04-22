@@ -148,15 +148,19 @@ async function applyToDocument() {
 
   try {
     await Word.run(async (context) => {
-      const body = context.document.body;
+      // Insert a test control via the API itself
+      const range = context.document.body.getRange("End");
+      const testCc = range.insertContentControl();
+      testCc.tag = "api_test";
+      await context.sync();
+
+      // Now search for all controls including the one we just inserted
       const controls = context.document.contentControls;
-      body.load("text");
       controls.load("items/tag");
       await context.sync();
 
-      const bodyPreview = body.text.substring(0, 60).replace(/\n/g, " ");
-      const foundTags = controls.items.map(cc => cc.tag);
-      setStatus(`Body: "${bodyPreview}" | Controls: ${controls.items.length} (${foundTags.join(", ") || "none"})`, "info");
+      const tags = controls.items.map(cc => cc.tag);
+      setStatus(`API inserted 1, found ${controls.items.length}: ${tags.join(", ") || "none"}`, "info");
       return;
 
       const updated = [];
