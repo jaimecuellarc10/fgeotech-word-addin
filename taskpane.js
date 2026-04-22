@@ -89,9 +89,12 @@ async function loadProject() {
     const baseUrl = `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.projectNumber=${encodeURIComponent(number)}`;
     const headers = { "access-token": apiKey, Accept: "application/json" };
 
-    const [resActive, resInactive] = await Promise.all([
+    const baseUrlNoNumber = `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.pageSize=1`;
+
+    const [resActive, resInactive, resInactiveTest] = await Promise.all([
       fetch(baseUrl, { headers }),
       fetch(`${baseUrl}&criteria.isActive=false`, { headers }),
+      fetch(`${baseUrlNoNumber}&criteria.isActive=false`, { headers }),
     ]);
 
     if (!resActive.ok) {
@@ -99,9 +102,10 @@ async function loadProject() {
       throw new Error(err.error || `Server returned ${resActive.status}`);
     }
 
-    const [dataActive, dataInactive] = await Promise.all([
+    const [dataActive, dataInactive, dataInactiveTest] = await Promise.all([
       resActive.json(),
       resInactive.ok ? resInactive.json() : Promise.resolve({ items: [] }),
+      resInactiveTest.ok ? resInactiveTest.json() : Promise.resolve({ totalItems: "err" }),
     ]);
 
     const activeItems = dataActive.items ?? (Array.isArray(dataActive) ? dataActive : []);
@@ -109,8 +113,7 @@ async function loadProject() {
     const project = activeItems[0] ?? inactiveItems[0];
 
     if (!project) {
-      const inactiveStatus = resInactive.ok ? `inactive:${inactiveItems.length}` : `inactive:err${resInactive.status}`;
-      throw new Error(`Project not found. (active:${activeItems.length}, ${inactiveStatus})`);
+      throw new Error(`Project not found. (active:${activeItems.length}, inactive:${inactiveItems.length}, inactiveTotal:${dataInactiveTest.totalItems})`);
     }
 
     populateFields(project);
