@@ -149,15 +149,19 @@ async function applyToDocument() {
   try {
     await Word.run(async (context) => {
       const controls = context.document.contentControls;
-      controls.load("items/tag,items/text");
+      controls.load("items");
       await context.sync();
 
-      const updated = [];
-      const notFound = [];
       if (controls.items.length === 0) {
         setStatus("No content controls found in this document at all.", "error");
         return;
       }
+
+      controls.items.forEach(cc => cc.load("tag,text"));
+      await context.sync();
+
+      const updated = [];
+      const notFound = [];
 
       for (const field of FIELD_MAP) {
         const value = document.getElementById(field.inputId).value;
