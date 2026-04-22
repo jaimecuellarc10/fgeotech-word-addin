@@ -86,10 +86,8 @@ async function loadProject() {
   setLoadBtn(true);
 
   try {
-    const statusValues = ["Active", "Complete", "Hold", "Proposal", "PendingInvoice", "Unsuccessful"];
-    const statusParams = statusValues.map(s => `criteria.statuses=${encodeURIComponent(s)}`).join("&");
     const res = await fetch(
-      `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.projectNumber=${encodeURIComponent(number)}&${statusParams}`,
+      `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.projectNumber=${encodeURIComponent(number)}`,
       { headers: { "access-token": apiKey, Accept: "application/json" } }
     );
 
@@ -99,17 +97,16 @@ async function loadProject() {
     }
 
     const data = await res.json();
-    console.log("Total Synergy response:", JSON.stringify(data));
-
-    // Total Synergy wraps results in { items: [...], totalItems: N }
     const project = data.items ? data.items[0] : (Array.isArray(data) ? data[0] : data);
 
     if (!project) {
-      throw new Error(`Project not found (API returned ${data.totalItems ?? 0} result(s)). The project may have a status not returned by default.`);
+      throw new Error(`Project not found. API returned 0 results — try an active project number to verify the connection works.`);
     }
 
     populateFields(project);
     document.getElementById("fields-section").style.display = "block";
+    document.getElementById("debug-output").textContent = JSON.stringify(project, null, 2);
+    document.getElementById("debug-section").style.display = "block";
     setStatus(`Project loaded: ${getNestedValue(project, "name") || number}`, "success");
   } catch (err) {
     setStatus(err.message, "error");
