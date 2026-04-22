@@ -89,14 +89,13 @@ async function loadProject() {
     const baseUrl = `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.projectNumber=${encodeURIComponent(number)}`;
     const headers = { "access-token": apiKey, Accept: "application/json" };
 
-    // Strip any alphabetic prefix (e.g. "C17294" → "17294") for number-only search
     const numberOnly = number.replace(/^[A-Za-z]+/, "");
-    const baseUrlNumberOnly = `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.projectNumber=${encodeURIComponent(numberOnly)}`;
+    const baseUrlNumeric = `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.number=${encodeURIComponent(numberOnly)}&criteria.isActive=false`;
 
-    const [resActive, resInactive, resInactiveNumberOnly] = await Promise.all([
+    const [resActive, resInactive, resNumeric] = await Promise.all([
       fetch(baseUrl, { headers }),
       fetch(`${baseUrl}&criteria.isActive=false`, { headers }),
-      fetch(`${baseUrlNumberOnly}&criteria.isActive=false`, { headers }),
+      fetch(baseUrlNumeric, { headers }),
     ]);
 
     if (!resActive.ok) {
@@ -104,19 +103,19 @@ async function loadProject() {
       throw new Error(err.error || `Server returned ${resActive.status}`);
     }
 
-    const [dataActive, dataInactive, dataInactiveNumberOnly] = await Promise.all([
+    const [dataActive, dataInactive, dataNumeric] = await Promise.all([
       resActive.json(),
       resInactive.ok ? resInactive.json() : Promise.resolve({ items: [] }),
-      resInactiveNumberOnly.ok ? resInactiveNumberOnly.json() : Promise.resolve({ items: [] }),
+      resNumeric.ok ? resNumeric.json() : Promise.resolve({ items: [] }),
     ]);
 
     const activeItems = dataActive.items ?? (Array.isArray(dataActive) ? dataActive : []);
     const inactiveItems = dataInactive.items ?? (Array.isArray(dataInactive) ? dataInactive : []);
-    const inactiveNumberOnlyItems = dataInactiveNumberOnly.items ?? (Array.isArray(dataInactiveNumberOnly) ? dataInactiveNumberOnly : []);
-    const project = activeItems[0] ?? inactiveItems[0] ?? inactiveNumberOnlyItems[0];
+    const numericItems = dataNumeric.items ?? (Array.isArray(dataNumeric) ? dataNumeric : []);
+    const project = activeItems[0] ?? inactiveItems[0] ?? numericItems[0];
 
     if (!project) {
-      throw new Error(`Project not found. (active:${activeItems.length}, inactive:${inactiveItems.length}, inactiveNoPrefix:${inactiveNumberOnlyItems.length})`);
+      throw new Error(`Project not found. (active:${activeItems.length}, inactive:${inactiveItems.length}, numeric:${numericItems.length})`);
     }
 
     populateFields(project);
