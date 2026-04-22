@@ -148,33 +148,9 @@ async function applyToDocument() {
 
   try {
     await Word.run(async (context) => {
-      const allControls = [];
-
-      // Search body
-      const bodyControls = context.document.body.contentControls;
-      bodyControls.load("items/tag");
-
-      // Search all sections (headers + footers)
-      const sections = context.document.sections;
-      sections.load("items");
+      const controls = context.document.contentControls;
+      controls.load("items/tag,items/text");
       await context.sync();
-
-      allControls.push(...bodyControls.items);
-
-      for (const section of sections.items) {
-        const headerPrimary = section.getHeader("Primary");
-        const footerPrimary = section.getFooter("Primary");
-        const headerControls = headerPrimary.contentControls;
-        const footerControls = footerPrimary.contentControls;
-        headerControls.load("items/tag");
-        footerControls.load("items/tag");
-        await context.sync();
-        allControls.push(...headerControls.items, ...footerControls.items);
-      }
-
-      const tags = allControls.map(cc => cc.tag);
-      setStatus(`Found ${allControls.length} control(s): ${tags.join(", ") || "none"}`, "info");
-      return;
 
       const updated = [];
       const notFound = [];
