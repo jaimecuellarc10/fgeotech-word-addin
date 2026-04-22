@@ -86,21 +86,30 @@ async function loadProject() {
   setLoadBtn(true);
 
   try {
-    const res = await fetch(
-      `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.projectNumber=${encodeURIComponent(number)}`,
-      { headers: { "access-token": apiKey, Accept: "application/json" } }
-    );
+    const baseUrl = `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.projectNumber=${encodeURIComponent(number)}`;
+    const headers = { "access-token": apiKey, Accept: "application/json" };
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `Server returned ${res.status}`);
+    const [resActive, resInactive] = await Promise.all([
+      fetch(baseUrl, { headers }),
+      fetch(`${baseUrl}&criteria.isActive=false`, { headers }),
+    ]);
+
+    if (!resActive.ok) {
+      const err = await resActive.json().catch(() => ({}));
+      throw new Error(err.error || `Server returned ${resActive.status}`);
     }
 
-    const data = await res.json();
-    const project = data.items ? data.items[0] : (Array.isArray(data) ? data[0] : data);
+    const [dataActive, dataInactive] = await Promise.all([
+      resActive.json(),
+      resInactive.ok ? resInactive.json() : Promise.resolve({ items: [] }),
+    ]);
+
+    const activeItems = dataActive.items ?? (Array.isArray(dataActive) ? dataActive : []);
+    const inactiveItems = dataInactive.items ?? (Array.isArray(dataInactive) ? dataInactive : []);
+    const project = activeItems[0] ?? inactiveItems[0];
 
     if (!project) {
-      throw new Error(`Project not found. API returned 0 results — try an active project number to verify the connection works.`);
+      throw new Error("Project not found. Check the project number and try again.");
     }
 
     populateFields(project);
