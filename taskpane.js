@@ -86,8 +86,10 @@ async function loadProject() {
   setLoadBtn(true);
 
   try {
+    const statusValues = ["Active", "Complete", "Hold", "Proposal", "PendingInvoice", "Unsuccessful"];
+    const statusParams = statusValues.map(s => `criteria.statuses=${encodeURIComponent(s)}`).join("&");
     const res = await fetch(
-      `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.projectNumber=${encodeURIComponent(number)}`,
+      `https://api.totalsynergy.com/api/v2/Organisation/${encodeURIComponent(orgSlug)}/Projects?criteria.projectNumber=${encodeURIComponent(number)}&${statusParams}`,
       { headers: { "access-token": apiKey, Accept: "application/json" } }
     );
 
