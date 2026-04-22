@@ -208,37 +208,62 @@ function updateSdtByTag(xml, tagName, value) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 
-  // Case-insensitive: tag names in Word Properties dialog may differ in capitalisation
   const escapedTag = tagName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const tagMatch = new RegExp(`w:val="${escapedTag}"`, "i").exec(xml);
   if (!tagMatch) return { xml, updated: false };
-  const tagIdx = tagMatch.index;
 
   const sdtContentOpen = "<w:sdtContent>";
-  const sdtPos = xml.indexOf(sdtContentOpen, tagIdx);
+  const sdtPos = xml.indexOf(sdtContentOpen, tagMatch.index);
   if (sdtPos === -1) return { xml, updated: false };
 
   const contentStart = sdtPos + sdtContentOpen.length;
-  const contentEnd = xml.indexOf("</w:sdtContent>", contentStart);
+  // Use nesting-aware search so nested SDTs don't confuse the end-tag lookup
+  const contentEnd = findClosingTag(xml, contentStart, sdtContentOpen, "</w:sdtContent>");
   if (contentEnd === -1) return { xml, updated: false };
 
   let content = xml.slice(contentStart, contentEnd);
 
-  let firstReplaced = false;
+  let replaced = false;
   content = content.replace(/<w:t(?:\s[^>]*)?>[\s\S]*?<\/w:t>/gi, () => {
-    if (!firstReplaced) {
-      firstReplaced = true;
-      return `<w:t xml:space="preserve">${safeValue}</w:t>`;
-    }
+    if (!replaced) { replaced = true; return `<w:t xml:space="preserve">${safeValue}</w:t>`; }
     return "<w:t/>";
   });
 
-  if (!firstReplaced) return { xml, updated: false };
+  // No <w:t> found — empty paragraph — inject a run before the last </w:p>
+  if (!replaced) {
+    const lastP = content.lastIndexOf("</w:p>");
+    if (lastP === -1) return { xml, updated: false };
+    content = content.slice(0, lastP) +
+      `<w:r><w:t xml:space="preserve">${safeValue}</w:t></w:r>` +
+      content.slice(lastP);
+    replaced = true;
+  }
 
   return {
     xml: xml.slice(0, contentStart) + content + xml.slice(contentEnd),
-    updated: true,
+    updated: replaced,
   };
+}
+
+// Finds the position of the closing tag that matches the opening at `start`,
+// correctly handling nested occurrences of the same tag pair.
+function findClosingTag(xml, start, openTag, closeTag) {
+  let depth = 1;
+  let pos = start;
+  while (depth > 0) {
+    const nextOpen  = xml.indexOf(openTag,  pos);
+    const nextClose = xml.indexOf(closeTag, pos);
+    if (nextClose === -1) return -1;
+    if (nextOpen !== -1 && nextOpen < nextClose) {
+      depth++;
+      pos = nextOpen + openTag.length;
+    } else {
+      depth--;
+      if (depth === 0) return nextClose;
+      pos = nextClose + closeTag.length;
+    }
+  }
+  return -1;
 }
 
 // --- Helpers ---
