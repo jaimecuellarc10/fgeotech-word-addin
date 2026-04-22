@@ -148,13 +148,12 @@ async function applyToDocument() {
 
   try {
     await Word.run(async (context) => {
-      const range = context.document.body.getRange("Whole");
-      range.load("ooxml");
+      const ooxmlResult = context.document.body.getOoxml();
       await context.sync();
-      const xml = range.ooxml;
+      const xml = ooxmlResult.value || "";
       const sdtCount = (xml.match(/<w:sdt[\s>]/gi) || []).length;
       const tagCount = (xml.match(/w:val="synergy_/gi) || []).length;
-      setStatus(`OOXML sdt elements: ${sdtCount} | synergy tags: ${tagCount}`, sdtCount > 0 ? "success" : "error");
+      setStatus(`OOXML sdt:${sdtCount} | synergy tags:${tagCount} | xmlLen:${xml.length}`, sdtCount > 0 ? "success" : "error");
       document.getElementById("applyBtn").disabled = false;
     });
     return;
