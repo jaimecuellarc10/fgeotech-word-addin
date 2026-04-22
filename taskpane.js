@@ -154,6 +154,10 @@ async function applyToDocument() {
 
       const updated = [];
       const notFound = [];
+      if (controls.items.length === 0) {
+        setStatus("No content controls found in this document at all.", "error");
+        return;
+      }
 
       for (const field of FIELD_MAP) {
         const value = document.getElementById(field.inputId).value;
