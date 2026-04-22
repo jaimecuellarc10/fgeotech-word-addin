@@ -152,6 +152,10 @@ async function applyToDocument() {
       controls.load("items/tag,items/text");
       await context.sync();
 
+      const foundTags = controls.items.map(cc => cc.tag);
+      setStatus(`Found ${controls.items.length} control(s): ${foundTags.join(", ") || "none"}`, "info");
+      await new Promise(r => setTimeout(r, 3000));
+
       const updated = [];
       const notFound = [];
 
