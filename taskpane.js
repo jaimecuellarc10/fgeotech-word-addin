@@ -148,6 +148,27 @@ async function applyToDocument() {
 
   try {
     await Word.run(async (context) => {
+      // Diagnostic: try three different load approaches
+      const a = context.document.contentControls;
+      a.load("tag");
+      const b = context.document.contentControls.getByTag("synergy_project_number");
+      b.load("items");
+      const c = context.document.body.contentControls;
+      c.load("tag");
+      await context.sync();
+      const msg = `load(tag):${a.items.length} | getByTag:${b.items.length} | body:${c.items.length}`;
+      setStatus(msg, "info");
+      document.getElementById("applyBtn").disabled = false;
+    });
+    return;
+  } catch (e) {
+    setStatus("Diag error: " + e.message, "error");
+    document.getElementById("applyBtn").disabled = false;
+    return;
+  }
+
+  try {
+    await Word.run(async (context) => {
       const controls = context.document.contentControls;
       controls.load("items/tag,items/text");
       await context.sync();
