@@ -148,23 +148,8 @@ async function applyToDocument() {
 
   try {
     await Word.run(async (context) => {
-      let controls = context.document.contentControls;
-      controls.load("items");
-      await context.sync();
-
-      // Fall back to body-only controls if document-level returns none
-      if (controls.items.length === 0) {
-        controls = context.document.body.contentControls;
-        controls.load("items");
-        await context.sync();
-      }
-
-      if (controls.items.length === 0) {
-        setStatus("No content controls found. If the document is protected (Restrict Editing), click Stop Protection first.", "error");
-        return;
-      }
-
-      controls.items.forEach(cc => cc.load("tag,text"));
+      const controls = context.document.contentControls;
+      controls.load("items/tag,items/text");
       await context.sync();
 
       const updated = [];
