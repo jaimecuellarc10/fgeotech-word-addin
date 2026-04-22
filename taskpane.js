@@ -177,7 +177,12 @@ async function applyToDocument() {
       await context.sync();
 
       let msg = `Applied ${updated.length} field(s).`;
-      if (notFound.length > 0) msg += ` No controls found for: ${notFound.join(", ")}.`;
+      if (notFound.length > 0) {
+        const docTags = [...new Set(
+          [...xml.matchAll(/w:val="(synergy_[^"]+)"/gi)].map(m => m[1].toLowerCase())
+        )];
+        msg += ` Missing: ${notFound.join(", ")}. Doc has: ${docTags.join(", ")}.`;
+      }
       setStatus(msg, updated.length > 0 ? "success" : "info");
     });
   } catch (err) {
@@ -194,8 +199,11 @@ function updateSdtByTag(xml, tagName, value) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 
-  const tagIdx = xml.indexOf(`w:val="${tagName}"`);
-  if (tagIdx === -1) return { xml, updated: false };
+  // Case-insensitive: tag names in Word Properties dialog may differ in capitalisation
+  const escapedTag = tagName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const tagMatch = new RegExp(`w:val="${escapedTag}"`, "i").exec(xml);
+  if (!tagMatch) return { xml, updated: false };
+  const tagIdx = tagMatch.index;
 
   const sdtContentOpen = "<w:sdtContent>";
   const sdtPos = xml.indexOf(sdtContentOpen, tagIdx);
