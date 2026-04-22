@@ -109,7 +109,8 @@ async function loadProject() {
     const project = activeItems[0] ?? inactiveItems[0];
 
     if (!project) {
-      throw new Error("Project not found. Check the project number and try again.");
+      const inactiveStatus = resInactive.ok ? `inactive:${inactiveItems.length}` : `inactive:err${resInactive.status}`;
+      throw new Error(`Project not found. (active:${activeItems.length}, ${inactiveStatus})`);
     }
 
     populateFields(project);
