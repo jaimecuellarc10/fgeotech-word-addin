@@ -152,8 +152,10 @@ async function applyToDocument() {
       await context.sync();
       const xml = ooxmlResult.value || "";
       const sdtCount = (xml.match(/<w:sdt[\s>]/gi) || []).length;
-      const tagCount = (xml.match(/w:val="synergy_/gi) || []).length;
-      setStatus(`OOXML sdt:${sdtCount} | synergy tags:${tagCount} | xmlLen:${xml.length}`, sdtCount > 0 ? "success" : "error");
+      const insCount = (xml.match(/<w:ins[\s>]/gi) || []).length;
+      const idx = xml.search(/<w:sdt[\s>]/i);
+      const ctx = idx >= 0 ? xml.substring(Math.max(0, idx - 120), idx + 80) : "(not found)";
+      setStatus(`sdt:${sdtCount} | w:ins:${insCount} | context before first sdt: ...${ctx}...`, sdtCount > 0 ? "success" : "error");
       document.getElementById("applyBtn").disabled = false;
     });
     return;
