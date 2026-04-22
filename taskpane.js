@@ -201,7 +201,7 @@ async function applyToDocument() {
   }
 }
 
-// Finds the SDT with the given tag name in raw OOXML and replaces its text content.
+// Finds ALL SDTs with the given tag name in raw OOXML and replaces their text content.
 function updateSdtByTag(xml, tagName, value) {
   const safeValue = value
     .replace(/&/g, "&amp;")
@@ -209,40 +209,54 @@ function updateSdtByTag(xml, tagName, value) {
     .replace(/>/g, "&gt;");
 
   const escapedTag = tagName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const tagMatch = new RegExp(`w:val="${escapedTag}"`, "i").exec(xml);
-  if (!tagMatch) return { xml, updated: false };
+  const tagPattern = new RegExp(`w:val="${escapedTag}"`, "i");
+  const OPEN  = "<w:sdtContent>";
+  const CLOSE = "</w:sdtContent>";
 
-  const sdtContentOpen = "<w:sdtContent>";
-  const sdtPos = xml.indexOf(sdtContentOpen, tagMatch.index);
-  if (sdtPos === -1) return { xml, updated: false };
+  let updated = false;
+  let offset = 0;
 
-  const contentStart = sdtPos + sdtContentOpen.length;
-  // Use nesting-aware search so nested SDTs don't confuse the end-tag lookup
-  const contentEnd = findClosingTag(xml, contentStart, sdtContentOpen, "</w:sdtContent>");
-  if (contentEnd === -1) return { xml, updated: false };
+  while (true) {
+    const match = tagPattern.exec(xml.slice(offset));
+    if (!match) break;
 
-  let content = xml.slice(contentStart, contentEnd);
+    const tagIdx    = offset + match.index;
+    const sdtPos    = xml.indexOf(OPEN, tagIdx);
+    if (sdtPos === -1) break;
 
-  let replaced = false;
-  content = content.replace(/<w:t(?:\s[^>]*)?>[\s\S]*?<\/w:t>/gi, () => {
-    if (!replaced) { replaced = true; return `<w:t xml:space="preserve">${safeValue}</w:t>`; }
-    return "<w:t/>";
-  });
+    const contentStart = sdtPos + OPEN.length;
+    const contentEnd   = findClosingTag(xml, contentStart, OPEN, CLOSE);
+    if (contentEnd === -1) break;
 
-  // No <w:t> found — empty paragraph — inject a run before the last </w:p>
-  if (!replaced) {
-    const lastP = content.lastIndexOf("</w:p>");
-    if (lastP === -1) return { xml, updated: false };
-    content = content.slice(0, lastP) +
-      `<w:r><w:t xml:space="preserve">${safeValue}</w:t></w:r>` +
-      content.slice(lastP);
-    replaced = true;
+    let content  = xml.slice(contentStart, contentEnd);
+    let replaced = false;
+
+    content = content.replace(/<w:t(?:\s[^>]*)?>[\s\S]*?<\/w:t>/gi, () => {
+      if (!replaced) { replaced = true; return `<w:t xml:space="preserve">${safeValue}</w:t>`; }
+      return "<w:t/>";
+    });
+
+    // No <w:t> found — empty paragraph — inject a run before the last </w:p>
+    if (!replaced) {
+      const lastP = content.lastIndexOf("</w:p>");
+      if (lastP !== -1) {
+        content = content.slice(0, lastP) +
+          `<w:r><w:t xml:space="preserve">${safeValue}</w:t></w:r>` +
+          content.slice(lastP);
+        replaced = true;
+      }
+    }
+
+    if (replaced) {
+      xml = xml.slice(0, contentStart) + content + xml.slice(contentEnd);
+      offset = contentStart + content.length + CLOSE.length;
+      updated = true;
+    } else {
+      offset = contentEnd + CLOSE.length;
+    }
   }
 
-  return {
-    xml: xml.slice(0, contentStart) + content + xml.slice(contentEnd),
-    updated: replaced,
-  };
+  return { xml, updated };
 }
 
 // Finds the position of the closing tag that matches the opening at `start`,
