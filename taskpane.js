@@ -148,13 +148,16 @@ async function applyToDocument() {
 
   try {
     await Word.run(async (context) => {
+      const body = context.document.body;
       const controls = context.document.contentControls;
-      controls.load("items/tag,items/text");
+      body.load("text");
+      controls.load("items/tag");
       await context.sync();
 
+      const bodyPreview = body.text.substring(0, 60).replace(/\n/g, " ");
       const foundTags = controls.items.map(cc => cc.tag);
-      setStatus(`Found ${controls.items.length} control(s): ${foundTags.join(", ") || "none"}`, "info");
-      await new Promise(r => setTimeout(r, 3000));
+      setStatus(`Body: "${bodyPreview}" | Controls: ${controls.items.length} (${foundTags.join(", ") || "none"})`, "info");
+      return;
 
       const updated = [];
       const notFound = [];
